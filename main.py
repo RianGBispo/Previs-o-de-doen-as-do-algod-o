@@ -1,7 +1,6 @@
 import streamlit as st
 from tensorflow.keras.preprocessing import image
 import numpy as np
-from tensorflow.keras.preprocessing import image
 import tensorflow as tf
 import os
 
@@ -29,6 +28,7 @@ rodape = st.sidebar.image(image_path, caption=text)
 st.sidebar.markdown('''  
   [![Linkedin Badge](https://img.shields.io/badge/LinkedIn-0077B5?style=flat-square&logo=Linkedin&logoColor=white&link=https://www.linkedin.com/in/rian-bispo/)](https://www.linkedin.com/in/rian-bispo/)
 ''')
+
 ###
 col1, col2, col3 = st.columns(3)
 with col1:
@@ -48,16 +48,9 @@ with col3:
 Para atingir nossos objetivos, faremos uso de um conjunto de dados abrangente contendo imagens rotuladas de folhas de algodão saudáveis e afetadas por diversas doenças.
 ''')
 
-# Certifique-se de substituir 'caminho_do_modelo.h5' pelo caminho real do seu arquivo.
-caminho_do_modelo = r'C:/Users/rianb/PycharmProjects/Previsão de doenças do algodão/modelo_cnn.h5'
+# Recreate the exact same model, including its weights and the optimizer
+modelo_carregado = tf.keras.models.load_model('modelo_cnn.h5')
 
-try:
-    # Usar a função open para abrir o arquivo corretamente.
-    with open(caminho_do_modelo, 'rb') as file:
-        modelo_carregado = tf.keras.models.load_model(file)
-    print("Modelo carregado com sucesso!")
-except Exception as e:
-    print(f"Erro ao carregar o modelo: {e}")
 
 def save_uploaded_file(uploaded_file):
     with open(uploaded_file.name, 'wb') as f:
@@ -65,33 +58,43 @@ def save_uploaded_file(uploaded_file):
     return uploaded_file.name
 
 
-# Caminho do vídeo de entrada
+def visualize_image_and_prediction(model, image_path, class_names):
+    # Dicionário de tradução
+    translation_dict = {
+        'diseased_leaf': 'folha doente',
+        'diseased_plant': 'planta doente',
+        'fresh_leaf': 'folha saudável',
+        'fresh_plant': 'planta saudável'
+    }
+
+    # Carregando a imagem
+    test_image = image.load_img(image_path, target_size=(64, 64))
+    test_image_array = image.img_to_array(test_image)
+    test_image_array = test_image_array / 255.0  # Normalizando os valores dos pixels para o intervalo [0, 1]
+
+    # Expandindo as dimensões para a previsão
+    test_image_array = np.expand_dims(test_image_array, axis=0)
+
+    # Realizando a previsão
+    result = model.predict(test_image_array)
+
+    # Mapeando os resultados para as classes
+    predicted_class_index = np.argmax(result)
+    predicted_class_english = class_names[predicted_class_index]
+    predicted_class_portuguese = translation_dict.get(predicted_class_english, predicted_class_english)
+
+    # Exibindo os resultados
+    st.write("Resultado da predição:", predicted_class_index)
+
+    st.subheader("Classe prevista: " + predicted_class_portuguese)
+    st.image(image_path)
+
+
+# Caminho da imagem de entrada
 INPUT_PATH = st.file_uploader("Escolha uma Imagem", type='jpg')
 
 if INPUT_PATH is not None:
-    # Converta o objeto retornado por st.file_uploader para um caminho de arquivo
-    img_path = save_uploaded_file(INPUT_PATH)
+    image_path = INPUT_PATH
+    class_names = ["diseased_leaf", "diseased_plant", "fresh_leaf", "fresh_plant"]
 
-    # Carregando a imagem e redimensionando para o tamanho esperado (64x64)
-    img = image.load_img(img_path, target_size=(64, 64))
-
-    # Convertendo a imagem para um array numpy
-    img_array = image.img_to_array(img)
-
-    # Normalizando os valores dos pixels para o intervalo [0, 1]
-    img_array = img_array / 255.0
-
-    # Adicionando uma dimensão extra para representar o batch (pois o modelo espera um batch de imagens)
-    img_array = np.expand_dims(img_array, axis=0)
-
-    # Realizando a predição usando o modelo carregado
-    prediction = modelo_carregado.predict(img_array)
-
-    # Obtendo as classes previstas
-    predicted_class_index = np.argmax(prediction)
-    classes = ["diseased_leaf", "diseased_plant", "freash_leaf", "freash_plant"]
-    predicted_class = classes[predicted_class_index]
-
-    # Exibindo os resultados
-    st.write("Resultado da predição:", prediction)
-    st.write("Classe prevista:", predicted_class)
+    visualize_image_and_prediction(modelo_carregado, image_path, class_names)
