@@ -1,9 +1,9 @@
 import streamlit as st
+import tensorflow as tf
 from tensorflow.keras.preprocessing import image
 import numpy as np
-import tensorflow as tf
 import os
-
+import time
 
 logo = 'favicon.ico'
 st.set_page_config(page_title='Detecção de Doenças no Algodão',
@@ -19,11 +19,20 @@ print(HOME)
 
 # Sidebar
 st.sidebar.header('⚠️Detecção de Doenças no Algodão🌱')
+st.sidebar.markdown('---')
+st.sidebar.subheader('️Como Usar')
+texto = '''
+1. Faça upload da Imagem que deseja Classificar
+2. Agurde...
+3. Visualize o resultado Gerado
+'''
+st.sidebar.markdown(texto)
 
+status = st.sidebar.empty()
 
 image_path = "https://distanciamentosocial.streamlit.app/~/+/media/c0acdfa0cd0543f70281795b9a3038ff0664840d9956acc97fb71df9.png"
 text = "Developed and Maintained by: Rian.Bispo"
-rodape = st.sidebar.image(image_path, caption=text)
+rodape = st.sidebar.image(image_path, caption=text, width=300)
 
 st.sidebar.markdown('''  
   [![Linkedin Badge](https://img.shields.io/badge/LinkedIn-0077B5?style=flat-square&logo=Linkedin&logoColor=white&link=https://www.linkedin.com/in/rian-bispo/)](https://www.linkedin.com/in/rian-bispo/)
@@ -83,18 +92,39 @@ def visualize_image_and_prediction(model, image_path, class_names):
     predicted_class_english = class_names[predicted_class_index]
     predicted_class_portuguese = translation_dict.get(predicted_class_english, predicted_class_english)
 
-    # Exibindo os resultados
-    st.write("Resultado da predição:", predicted_class_index)
-
-    st.subheader("Classe prevista: " + predicted_class_portuguese)
-    st.image(image_path)
+    cl1, cl2 = st.columns(2)
+    with cl1:
+        # Exibindo os resultados
+        # st.write("Resultado da predição:", predicted_class_index)
+        st.image(image_path, caption=("Classe prevista: " + predicted_class_portuguese), width=500)
+    with cl2:
+        if predicted_class_index == 0:
+            st.image('data/folhadoente.png', width=500, caption='Folha Doente')
+        elif predicted_class_index == 1:
+            st.image('data/plantadoente.png', width=500, caption='Planta Doente')
+        elif predicted_class_index == 2:
+            st.image('data/folha.png', width=500, caption='Folha Fresca')
+        else:
+            st.image('data/planta-crescente.png', width=500, caption='Planta Fresca')
 
 
 # Caminho da imagem de entrada
 INPUT_PATH = st.file_uploader("Escolha uma Imagem", type='jpg')
 
 if INPUT_PATH is not None:
-    image_path = INPUT_PATH
-    class_names = ["diseased_leaf", "diseased_plant", "fresh_leaf", "fresh_plant"]
+    try:
+        # Atualize o status para indicar que a imagem está sendo carregada
+        with st.spinner('Carregando a Imagem...'):
+            time.sleep(1)
 
-    visualize_image_and_prediction(modelo_carregado, image_path, class_names)
+        # Carregue a imagem e realize a previsão
+        image_path = INPUT_PATH
+        class_names = ["diseased_leaf", "diseased_plant", "fresh_leaf", "fresh_plant"]
+        visualize_image_and_prediction(modelo_carregado, image_path, class_names)
+
+        # Atualize o status para indicar que a previsão foi concluída com sucesso
+        status.success('Pronto!!!', icon="✅")
+
+    except Exception as e:
+        # Em caso de erro, atualize o status para indicar o problema
+        status.error(f"Erro: {str(e)}", icon="❌")
