@@ -23,14 +23,14 @@ st.sidebar.markdown('---')
 st.sidebar.subheader('️Como Usar')
 texto = '''
 1. Faça upload da Imagem que deseja Classificar
-2. Agurde...
+2. Aguarde...
 3. Visualize o resultado Gerado
 '''
 st.sidebar.markdown(texto)
 
 status = st.sidebar.empty()
 
-image_path = "https://distanciamentosocial.streamlit.app/~/+/media/c0acdfa0cd0543f70281795b9a3038ff0664840d9956acc97fb71df9.png"
+image_path = "logo.png"
 text = "Developed and Maintained by: Rian.Bispo"
 rodape = st.sidebar.image(image_path, caption=text, width=300)
 
